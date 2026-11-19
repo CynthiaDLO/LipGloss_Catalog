@@ -1,0 +1,16 @@
+# Private configuration and databases
+.env
+.env.*
+!.env.example
+.local_secret_key
+*.sqlite3
+*.sqlite3-*
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+# Node / Expo
+node_modules/
+.expo/
+# Runtime
+*.log

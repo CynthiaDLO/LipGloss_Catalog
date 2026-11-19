@@ -1,0 +1,193 @@
+from decimal import Decimal
+from django.conf import settings
+from django.db import models
+
+
+class Brand(models.Model):
+    name = models.CharField(
+        max_length=100,
+        unique=True
+    )
+
+    description = models.TextField(
+        blank=True
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class Lipgloss(models.Model):
+    brand = models.ForeignKey(
+        Brand,
+        on_delete=models.PROTECT,
+        related_name="lipglosses"
+    )
+
+    name = models.CharField(
+        max_length=150
+    )
+
+    shade = models.CharField(
+        max_length=100
+    )
+
+    price = models.DecimalField(
+        max_digits=8,
+        decimal_places=2
+    )
+
+    description = models.TextField(
+        blank=True
+    )
+
+    image = models.ImageField(
+        upload_to="lipgloss/",
+        blank=True,
+        null=True
+    )
+
+    is_active = models.BooleanField(
+        default=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    # None means inventory is not tracked for this legacy product.
+    stock = models.PositiveIntegerField(null=True, blank=True, default=None)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["brand", "name", "shade"],
+                name="unique_brand_lipgloss_shade"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.brand.name} - {self.name} ({self.shade})"
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="favorites"
+    )
+
+    lipgloss = models.ForeignKey(
+        Lipgloss,
+        on_delete=models.CASCADE,
+        related_name="favorites"
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "lipgloss"],
+                name="unique_user_lipgloss_favorite"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.lipgloss.name}"
+
+
+class UserPreference(models.Model):
+    THEME_CHOICES = [
+        ("light", "Claro"),
+        ("dark", "Oscuro"),
+        ("system", "Sistema"),
+    ]
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="preferences"
+    )
+
+    theme = models.CharField(
+        max_length=10,
+        choices=THEME_CHOICES,
+        default="system"
+    )
+
+    page_size = models.PositiveSmallIntegerField(
+        default=10
+    )
+
+    def __str__(self):
+        return f"Preferences - {self.user.username}"
+
+
+class Cart(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="cart"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Cart - {self.user.username}"
+
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
+    lipgloss = models.ForeignKey(Lipgloss, on_delete=models.CASCADE, related_name="cart_items")
+    quantity = models.PositiveSmallIntegerField()
+
+    class Meta:
+        constraints = [models.UniqueConstraint(
+            fields=["cart", "lipgloss"], name="unique_cart_product"
+        )]
+
+    def __str__(self):
+        return f"{self.quantity} × {self.lipgloss.name}"
+
+
+class Order(models.Model):
+    class Status(models.TextChoices):
+        PLACED = "placed", "Realizado"
+        CONFIRMED = "confirmed", "Confirmado"
+        SHIPPED = "shipped", "Enviado"
+        DELIVERED = "delivered", "Entregado"
+        CANCELLED = "cancelled", "Cancelado"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="orders"
+    )
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PLACED)
+    total = models.DecimalField(max_digits=12, decimal_places=2)
+    idempotency_key = models.UUIDField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [models.UniqueConstraint(
+            fields=["user", "idempotency_key"], name="unique_order_checkout_key"
+        )]
+
+    def __str__(self):
+        return f"Order #{self.pk} - {self.user.username}"
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
+    lipgloss = models.ForeignKey(
+        Lipgloss, on_delete=models.SET_NULL, related_name="order_items", null=True
+    )
+    product_name = models.CharField(max_length=150)
+    brand_name = models.CharField(max_length=100)
+    shade = models.CharField(max_length=100)
+    unit_price = models.DecimalField(max_digits=8, decimal_places=2)
+    quantity = models.PositiveSmallIntegerField()
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2)
+
+    def __str__(self):
+        return f"Order #{self.order_id}: {self.product_name} × {self.quantity}"
