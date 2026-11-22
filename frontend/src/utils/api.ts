@@ -3,12 +3,12 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 
 function getApiUrl(): string {
-  // Android emulator
+  // Emulador de Android
   if (Platform.OS === "android" && !Constants.expoConfig?.hostUri) {
     return "http://10.0.2.2:8000";
   }
 
-  // Expo development server
+  // Servidor de desarrollo Expo
   const hostUri = Constants.expoConfig?.hostUri;
 
   if (hostUri) {
@@ -16,13 +16,13 @@ function getApiUrl(): string {
     return `http://${host}:8000`;
   }
 
-  // Local fallback
+  // Fallback local por defecto
   return "http://127.0.0.1:8000";
 }
 
 export const API_URL = getApiUrl();
 
-export const DEFAULT_TIMEOUT_MS = 10000;
+export const DEFAULT_TIMEOUT_MS = 5000;
 
 export interface ApiRequestOptions extends RequestInit {
   requiresAuth?: boolean;
@@ -37,6 +37,7 @@ function resolveUrl(endpoint: string): string {
   return `${API_URL}${normalizedEndpoint}`;
 }
 
+// Función unificada para realizar peticiones HTTP (autenticadas y públicas) con límite de tiempo y captura de errores
 export async function apiRequest<T>(
   endpoint: string,
   options: ApiRequestOptions = {}
@@ -52,14 +53,16 @@ export async function apiRequest<T>(
 
   const headers = new Headers(customHeaders);
 
+  // Adjunta el token si el endpoint requiere autenticación
   if (requiresAuth) {
     const token = await getToken();
     if (!token) {
-      throw new Error("No active session found.");
+      throw new Error("No hay una sesión activa.");
     }
     headers.set("Authorization", `Token ${token}`);
   }
 
+  // Configura Content-Type en application/json solo si el body no es FormData
   if (body && !(body instanceof FormData)) {
     if (!headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
@@ -70,6 +73,7 @@ export async function apiRequest<T>(
   const controller = new AbortController();
   let isTimeout = false;
 
+  // Escucha cancelaciones externas si fueron pasadas en options
   let abortListener: (() => void) | null = null;
   if (externalSignal) {
     if (externalSignal.aborted) {
@@ -80,6 +84,7 @@ export async function apiRequest<T>(
     }
   }
 
+  // Temporizador para el límite de tiempo de la petición
   const timeoutId = setTimeout(() => {
     isTimeout = true;
     controller.abort();
@@ -87,6 +92,7 @@ export async function apiRequest<T>(
 
   let response: Response;
 
+  // Ejecución de la petición protegida con un catch unificado para caídas de red y servidor apagado
   try {
     response = await fetch(url, {
       ...restOptions,
@@ -97,14 +103,14 @@ export async function apiRequest<T>(
   } catch (error: unknown) {
     if (isTimeout) {
       throw new Error(
-        `Request timeout: The server took longer than ${timeoutMs / 1000} seconds to respond.`
+        `Tiempo de espera agotado: El servidor tardó más de ${timeoutMs / 1000} segundos en responder.`
       );
     }
     if (error instanceof Error && error.name === "AbortError" && !isTimeout) {
       throw error;
     }
     throw new Error(
-      "Unable to connect to the server. Please check your network connection and verify that the backend is running."
+      "No se pudo conectar con el servidor. Revisa tu conexión."
     );
   } finally {
     clearTimeout(timeoutId);
@@ -113,6 +119,7 @@ export async function apiRequest<T>(
     }
   }
 
+  // Respuesta sin contenido (ej. status 204 en eliminaciones)
   if (response.status === 204) {
     return undefined as T;
   }
@@ -130,14 +137,14 @@ export async function apiRequest<T>(
 
   if (!response.ok) {
     if (response.status === 401) {
-      throw new Error("Session expired or invalid. Please sign in again.");
+      throw new Error("La sesión ha expirado o no es válida.");
     }
 
     if (response.status === 429) {
-      throw new Error("Too many requests. Please try again later.");
+      throw new Error("Demasiados intentos. Intenta nuevamente más tarde.");
     }
 
-    // Extract Django serializer / API validation errors
+    // Extrae errores de validación de serializers o modelos de Django
     if (data && typeof data === "object") {
       for (const value of Object.values(data)) {
         if (Array.isArray(value) && value.length > 0) {
@@ -162,12 +169,13 @@ export async function apiRequest<T>(
       throw new Error(data.trim());
     }
 
-    throw new Error(`Server error (${response.status}). Please try again.`);
+    throw new Error(`Error del servidor (${response.status}). Intenta nuevamente.`);
   }
 
   return data as T;
 }
 
+// Envuelve apiRequest forzando la autenticación para endpoints protegidos
 export async function fetchWithAuth<T>(
   endpoint: string,
   options: RequestInit = {}

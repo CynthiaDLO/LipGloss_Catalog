@@ -324,5 +324,10 @@ export const englishMessages: Record<string,string> = {
   "Cargando inventario...": "Loading inventory...",
   "Se guardó correctamente.": "Saved successfully.",
   "Cargando preferencias...": "Loading preferences...",
-  "El producto está agotado.": "Product is out of stock."
+  "El producto está agotado.": "Product is out of stock.",
+  "No se pudo conectar con el servidor. Revisa tu conexión.": "Could not connect to the server. Please check your connection.",
+  "No hay una sesión activa.": "No active session found.",
+  "La sesión ha expirado o no es válida.": "Session has expired or is invalid.",
+  "Demasiados intentos. Intenta nuevamente más tarde.": "Too many attempts. Please try again later.",
+  "Intenta nuevamente.": "Please try again."
 };
