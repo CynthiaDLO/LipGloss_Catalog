@@ -14,6 +14,7 @@ export interface Lipgloss {
   description: string;
   image: string | null;
   is_active: boolean;
+  is_featured: boolean;
   stock?: number | null;
   created_at: string;
 }

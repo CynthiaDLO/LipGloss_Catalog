@@ -332,5 +332,8 @@ export const englishMessages: Record<string,string> = {
   "Intenta nuevamente.": "Please try again.",
   "¡Últimas piezas!": "Low stock!",
   "Novedad": "New",
-  "Popular": "Popular"
+  "Popular": "Popular",
+  "★ En portada (tocar para quitar)": "★ Featured on home (tap to remove)",
+  "☆ No destacado (tocar para poner en portada)": "☆ Not featured (tap to feature on home)",
+  "✨ Destacados": "✨ Featured"
 };

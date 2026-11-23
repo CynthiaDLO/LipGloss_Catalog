@@ -26,6 +26,7 @@ export default function ProductDetailsScreen() {
   const [description, setDescription] = useState("");
   const [stock, setStock] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [isFeatured, setIsFeatured] = useState(false);
   const [brands, setBrands] = useState<AdminBrand[]>([]);
   const [brandId, setBrandId] = useState<number | null>(null);
   const [product, setProduct] = useState<Lipgloss | null>(null);
@@ -54,7 +55,7 @@ export default function ProductDetailsScreen() {
       setProduct(details); setName(details.name); setShade(details.shade);
       setPrice(details.price); setDescription(details.description || "");
       setStock(details.stock == null ? "" : String(details.stock));
-      setIsActive(details.is_active); setBrandId(details.brand.id);
+      setIsActive(details.is_active); setIsFeatured(Boolean(details.is_featured)); setBrandId(details.brand.id);
       if (isAdmin) setBrands(await getAdminBrands());
       else setFavorite((await getFavorites()).some(item => item.id === productId));
     } catch (reason) { setError(getErrorText(reason)); }
@@ -94,7 +95,7 @@ export default function ProductDetailsScreen() {
     setBusy(true);
     try {
       await editProduct(product.id, {brand_id:brandId, name:nextName, shade:nextShade, price:nextPrice,
-        description:description.trim(), stock:nextStock === "" ? null : Number(nextStock), is_active:isActive});
+        description:description.trim(), stock:nextStock === "" ? null : Number(nextStock), is_active:isActive, is_featured:isFeatured});
       Alert.alert(t("Producto actualizado", "Product updated"), t("Los cambios se guardaron correctamente.", "Changes saved successfully."));
       await load();
     } catch (reason) { Alert.alert(t("No se pudo guardar", "Could not save"), getErrorText(reason)); }
@@ -171,6 +172,9 @@ export default function ProductDetailsScreen() {
         <ActionButton title={isActive ? t("Estado: Activo (tocar para desactivar)", "Status: Active (tap to disable)")
           : t("Estado: Inactivo (tocar para activar)", "Status: Inactive (tap to enable)")}
           secondary disabled={busy} onPress={() => setIsActive(value => !value)}/>
+        <ActionButton title={isFeatured ? t("★ En portada (tocar para quitar)", "★ Featured on home (tap to remove)")
+          : t("☆ No destacado (tocar para poner en portada)", "☆ Not featured (tap to feature on home)")}
+          secondary disabled={busy} onPress={() => setIsFeatured(value => !value)}/>
         <ActionButton title={busy ? t("Guardando...", "Saving...") : t("Guardar cambios", "Save changes")}
           disabled={busy} onPress={() => void saveProduct()}/>
         <ActionButton title={t("Eliminar producto", "Delete product")} secondary disabled={busy}

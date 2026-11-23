@@ -175,6 +175,7 @@ class LipglossSerializer(serializers.ModelSerializer):
             "description",
             "image",
             "is_active",
+            "is_featured",
             "stock",
             "created_at"
         ]

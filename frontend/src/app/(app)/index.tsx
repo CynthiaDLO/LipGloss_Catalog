@@ -7,7 +7,8 @@ import { useAuth } from "../../context/AuthContext";
 import { useAppearance } from "../../context/AppearanceContext";
 import { ActionButton, commerceStyles as s, getErrorText, palette } from "../../components/ui/CommerceUi";
 import ProductTile from "../../components/ui/ProductTile";
-import { getBrands, getCatalogPage, getFavorites, addFavorite, removeFavorite, getPreferences, type CatalogFilters } from "../../services/discovery";
+import FeaturedCarousel from "../../components/ui/FeaturedCarousel";
+import { getBrands, getCatalogPage, getFavorites, addFavorite, removeFavorite, getPreferences, getFeaturedProducts, type CatalogFilters } from "../../services/discovery";
 import type { Brand, Lipgloss } from "../../types/Lipgloss";
 
 export default function HomeScreen() {
@@ -33,11 +34,18 @@ export default function HomeScreen() {
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [featuredProducts, setFeaturedProducts] = useState<Lipgloss[]>([]);
   useEffect(() => {
     setShowWelcome(true);
     const timeout = setTimeout(() => setShowWelcome(false), 4000);
     return () => clearTimeout(timeout);
   }, [user?.id]);
+
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    void getFeaturedProducts().then(items => { if (active) setFeaturedProducts(items); }).catch(() => {});
+    return () => { active = false; };
+  }, []));
 
   useEffect(() => { let active = true; (async () => {
     try {
@@ -88,6 +96,7 @@ export default function HomeScreen() {
       ListHeaderComponent={<View style={{gap:16}}>
         {showWelcome && !local.reduce_motion ? <View style={styles.welcome}><Text style={styles.welcomeText}>✦ El brillo que va contigo, {user?.first_name || user?.username}.</Text></View> : null}
         <View style={styles.catalogHeading}><Text style={s.title}>{user?.is_staff ? "Catálogo administrativo" : "Descubre tus tonos"}</Text><Text style={s.muted}>{user?.is_staff ? "Selecciona un producto para editarlo o eliminarlo." : "Encuentra tu favorito."}</Text></View>
+        <FeaturedCarousel products={featuredProducts} onPress={item => router.push(`/product/${item.id}` as Href)} />
         <View style={styles.searchRow}><TextInput accessibilityLabel="Buscar productos" placeholder="Buscar nombre, tono o marca" placeholderTextColor={palette.muted} value={search} onChangeText={setSearch} onSubmitEditing={()=>{setPage(1);setSubmittedSearch(search);}} returnKeyType="search" style={styles.searchInput}/><Pressable accessibilityRole="button" onPress={()=>{setPage(1);setSubmittedSearch(search);}} style={styles.searchButton}><Text style={styles.searchButtonText}>Buscar</Text></Pressable></View>
         <Pressable style={styles.filterToggle} onPress={()=>setShowFilters(value=>!value)}><Text style={styles.filterText}>☷  {showFilters?"Ocultar filtros":"Filtros y ordenamiento"}</Text><Text style={styles.filterText}>{showFilters?"−":"+"}</Text></Pressable>
         {showFilters ? <View style={styles.filterPanel}>

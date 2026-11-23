@@ -40,6 +40,13 @@ export async function getBrands(): Promise<Brand[]> {
 export const getFavorites = () => fetchWithAuth<Lipgloss[]>("/api/favorites/");
 export const addFavorite = (productId: number) => fetchWithAuth<{ product_id: number; is_favorite: boolean }>("/api/favorites/", { method: "POST", body: JSON.stringify({ product_id: productId }) });
 export const removeFavorite = (productId: number) => fetchWithAuth<void>(`/api/favorites/${productId}/`, { method: "DELETE" });
+
+/** Returns up to 5 active products marked as featured for the home carousel. */
+export async function getFeaturedProducts(): Promise<Lipgloss[]> {
+  const data = await fetchWithAuth<{ results: Lipgloss[] } | Lipgloss[]>("/api/lipglosses/?is_featured=true&page_size=5&ordering=-created_at");
+  const list = Array.isArray(data) ? data : data.results;
+  return list.filter(p => p.is_active && p.is_featured);
+}
 export interface UserPreferences { theme: "light" | "dark" | "system"; page_size: number; language: "es" | "en"; font_scale: string }
 export const getPreferences = () => fetchWithAuth<UserPreferences>("/api/settings/");
 export const savePreferences = (settings: Partial<UserPreferences>) => fetchWithAuth<UserPreferences>("/api/settings/", { method: "PATCH", body: JSON.stringify(settings) });

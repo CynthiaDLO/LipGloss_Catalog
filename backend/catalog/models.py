@@ -58,6 +58,9 @@ class Lipgloss(models.Model):
     # None means inventory is not tracked for this legacy product.
     stock = models.PositiveIntegerField(null=True, blank=True, default=None)
 
+    # Whether this product appears in the home screen featured carousel.
+    is_featured = models.BooleanField(default=False)
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
