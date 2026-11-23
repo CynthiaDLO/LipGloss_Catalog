@@ -329,5 +329,8 @@ export const englishMessages: Record<string,string> = {
   "No hay una sesión activa.": "No active session found.",
   "La sesión ha expirado o no es válida.": "Session has expired or is invalid.",
   "Demasiados intentos. Intenta nuevamente más tarde.": "Too many attempts. Please try again later.",
-  "Intenta nuevamente.": "Please try again."
+  "Intenta nuevamente.": "Please try again.",
+  "¡Últimas piezas!": "Low stock!",
+  "Novedad": "New",
+  "Popular": "Popular"
 };
